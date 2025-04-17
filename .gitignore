@@ -8,8 +8,6 @@
 # Test binary, build tags, etc.
 *.test
 *.out
-*.mod
-*.sum
 
 # Output of the go coverage tool, configuration directory, etc.
 *.cover
