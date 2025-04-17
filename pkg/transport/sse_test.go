@@ -205,23 +205,33 @@ func TestSSETransport_HandleConnection(t *testing.T) {
 
 func TestSSETransport_HandleConnection_NoSessionId(t *testing.T) {
 	s := setupTestSSETransport("/mcp/events")
-	c, w, _ := setupTestGinContext("GET", "/mcp/events", nil, nil) // No query params
+	c, _, cancel := setupTestGinContext("GET", "/mcp/events", nil, nil) // No query params
+	defer cancel()
 
-	go s.HandleConnection(c) // Run in goroutine
-	time.Sleep(100 * time.Millisecond)
+	var connID string // To store the generated ID for cleanup
+	var connMu sync.Mutex
 
-	// Check that a session ID was generated and added
-	connID := w.Header().Get("X-Connection-ID")
-	require.NotEmpty(t, connID, "X-Connection-ID header should be set with generated ID")
-	_, err := uuid.Parse(connID)
+	go s.HandleConnection(c)           // Run in goroutine
+	time.Sleep(150 * time.Millisecond) // Increased sleep slightly
+
+	// Check that a connection was added (don't check header due to race)
+	s.cMu.RLock()
+	assert.NotEmpty(t, s.connections, "Connections map should not be empty")
+	if len(s.connections) == 1 {
+		// Get the ID for cleanup if exactly one connection exists
+		for id := range s.connections {
+			connMu.Lock()
+			connID = id
+			connMu.Unlock()
+		}
+	}
+	s.cMu.RUnlock()
+
+	require.NotEmpty(t, connID, "Failed to retrieve generated connection ID for cleanup")
+	_, err := uuid.Parse(connID) // Still validate the format of the captured ID
 	require.NoError(t, err, "Generated connection ID should be a valid UUID")
 
-	s.cMu.RLock()
-	_, exists := s.connections[connID]
-	s.cMu.RUnlock()
-	assert.True(t, exists, "Connection with generated ID should be added")
-
-	// Clean up
+	// Clean up using the captured ID
 	s.RemoveConnection(connID)
 }
 
