@@ -1,4 +1,4 @@
-![gin-mcp-example](https://github.com/user-attachments/assets/bd2c92c9-0c71-4f4c-8f29-81c152b355de)# Gin-MCP: Zero-Config Gin to MCP Bridge
+# Gin-MCP: Zero-Config Gin to MCP Bridge
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ckanthony/gin-mcp.svg)](https://pkg.go.dev/github.com/ckanthony/gin-mcp)
 [![CI](https://github.com/ckanthony/gin-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ckanthony/gin-mcp/actions/workflows/ci.yml)
