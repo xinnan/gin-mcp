@@ -1,21 +1,21 @@
-# Gin-MCP: Zero-Config Gin to MCP Bridge
+![gin-mcp-example](https://github.com/user-attachments/assets/bd2c92c9-0c71-4f4c-8f29-81c152b355de)# Gin-MCP: Zero-Config Gin to MCP Bridge
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ckanthony/gin-mcp.svg)](https://pkg.go.dev/github.com/ckanthony/gin-mcp)
 [![CI](https://github.com/ckanthony/gin-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ckanthony/gin-mcp/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/ckanthony/gin-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/ckanthony/gin-mcp)
 ![](https://badge.mcpx.dev?type=dev 'MCP Dev')
 
-<table>
+<table border="0">
   <tr>
     <td valign="top">
-      **Enable MCP features for any Gin API with a line of code.**
-
-      Gin-MCP is an **opinionated, zero-configuration** library that automatically exposes your existing Gin endpoints as [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) tools, making them instantly usable by MCP-compatible clients like [Cursor](https://cursor.sh/).
-
-      Our philosophy is simple: **minimal setup, maximum productivity**. Just plug Gin-MCP into your Gin application, and it handles the rest.
+      <strong>Enable MCP features for any Gin API with a line of code.</strong>
+      <br><br>
+      Gin-MCP is an <strong>opinionated, zero-configuration</strong> library that automatically exposes your existing Gin endpoints as <a href="https://modelcontextprotocol.io/introduction">Model Context Protocol (MCP)</a> tools, making them instantly usable by MCP-compatible clients like <a href="https://cursor.sh/">Cursor</a>.
+      <br><br>
+      Our philosophy is simple: <strong>minimal setup, maximum productivity</strong>. Just plug Gin-MCP into your Gin application, and it handles the rest.
     </td>
-    <td valign="top" align="right" width="300">
-      <img src="gin-mcp.png" alt="Gin-MCP Logo" width="300"/>
+    <td valign="top" align="right" width="200">
+      <img src="gin-mcp.png" alt="Gin-MCP Logo" width="200"/>
     </td>
   </tr>
 </table>
@@ -27,6 +27,10 @@
 -   **Developer Productivity:** Spend less time configuring tools and more time building features.
 -   **Flexibility:** While zero-config is the default, customize schemas and endpoint exposure when needed.
 -   **Existing API:** Works with your existing Gin API - no need to change any code.
+
+## Demo
+
+![gin-mcp-example](https://github.com/user-attachments/assets/ad6948ce-ed11-400b-8e96-9b020e51df78)
 
 ## Features
 
