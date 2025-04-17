@@ -1,0 +1,37 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build tags, etc.
+*.test
+*.out
+*.mod
+*.sum
+
+# Output of the go coverage tool, configuration directory, etc.
+*.cover
+*.prof
+
+# Environment configuration
+.env*
+!.env.example
+
+# IDE settings/metadata
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Go workspace files (if used)
+.work/
+
+# Dependency directories (should use Go modules)
+vendor/
+
+# OS-specific files
+.DS_Store
+Thumbs.db 
