@@ -5,20 +5,20 @@
 [![codecov](https://codecov.io/gh/ckanthony/gin-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/ckanthony/gin-mcp)
 ![](https://badge.mcpx.dev?type=dev 'MCP Dev')
 
-<div style="display: flex; align-items: start;">
-<div style="flex: 1;">
+<table>
+  <tr>
+    <td valign="top">
+      **Enable MCP features for any Gin API with a line of code.**
 
-**Enable MCP features for any Gin API with a line of code.**
+      Gin-MCP is an **opinionated, zero-configuration** library that automatically exposes your existing Gin endpoints as [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) tools, making them instantly usable by MCP-compatible clients like [Cursor](https://cursor.sh/).
 
-Gin-MCP is an **opinionated, zero-configuration** library that automatically exposes your existing Gin endpoints as [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) tools, making them instantly usable by MCP-compatible clients like [Cursor](https://cursor.sh/).
-
-Our philosophy is simple: **minimal setup, maximum productivity**. Just plug Gin-MCP into your Gin application, and it handles the rest.
-
-</div>
-<div style="flex: 0 0 auto; margin-left: 20px;">
-<img src="gin-mcp.png" alt="Gin-MCP Logo" width="300"/>
-</div>
-</div>
+      Our philosophy is simple: **minimal setup, maximum productivity**. Just plug Gin-MCP into your Gin application, and it handles the rest.
+    </td>
+    <td valign="top" align="right" width="300">
+      <img src="gin-mcp.png" alt="Gin-MCP Logo" width="300"/>
+    </td>
+  </tr>
+</table>
 
 ## Why Gin-MCP?
 
