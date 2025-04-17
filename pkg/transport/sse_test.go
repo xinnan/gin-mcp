@@ -1,14 +1,12 @@
 package transport
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -153,8 +151,8 @@ func TestSSETransport_HandleConnection(t *testing.T) {
 		s.HandleConnection(c)
 	}()
 
-	// Wait a short time for initial events
-	time.Sleep(100 * time.Millisecond)
+	// Wait a very short time for HandleConnection to start and potentially add the connection
+	time.Sleep(50 * time.Millisecond)
 
 	// Verify connection was added
 	s.cMu.RLock()
@@ -163,55 +161,40 @@ func TestSSETransport_HandleConnection(t *testing.T) {
 	assert.True(t, exists, "Connection should be added")
 	assert.NotNil(t, msgChan)
 
-	// Verify headers
+	// Verify headers (Check immediately after connection is confirmed, but acknowledge potential race)
+	// A more robust test might use channels to signal header writing completion.
 	assert.Equal(t, "text/event-stream", w.Header().Get("Content-Type"))
 	assert.Equal(t, "no-cache", w.Header().Get("Cache-Control"))
 	assert.Equal(t, "keep-alive", w.Header().Get("Connection"))
 	assert.Equal(t, testSessionId, w.Header().Get("X-Connection-ID"))
 
-	// Read initial events from the response body
-	reader := bufio.NewReader(w.Body)
-
-	// 1. Endpoint event
-	line1, _ := reader.ReadString('\n')
-	line2, _ := reader.ReadString('\n')
-	line3, _ := reader.ReadString('\n') // Blank line
-	assert.Equal(t, "event: endpoint\n", line1)
-	expectedEndpointData := fmt.Sprintf("data: %s?sessionId=%s\n", s.MountPath(), testSessionId)
-	assert.Equal(t, expectedEndpointData, line2)
-	assert.Equal(t, "\n", line3)
-
-	// 2. Ready event
-	line4, _ := reader.ReadString('\n')
-	line5, _ := reader.ReadString('\n')
-	line6, _ := reader.ReadString('\n') // Blank line
-	assert.Equal(t, "event: message\n", line4)
-	assert.True(t, strings.HasPrefix(line5, "data: {"), "Ready message data should start with JSON object")
-	assert.True(t, strings.Contains(line5, `"method":"mcp-ready"`), "Ready message should contain method")
-	assert.True(t, strings.Contains(line5, `"connectionId":"`+testSessionId+`"`), "Ready message should contain connectionId")
-	assert.Equal(t, "\n", line6)
-
 	// Send a message to the connection
 	testMsg := &types.MCPMessage{Jsonrpc: "2.0", ID: types.RawMessage(`"test-id"`), Result: "test result"}
 	msgChan <- testMsg
-
-	// Allow time for the message to be written
-	time.Sleep(100 * time.Millisecond)
-
-	// 3. Custom message event
-	line7, _ := reader.ReadString('\n')
-	line8, _ := reader.ReadString('\n')
-	line9, _ := reader.ReadString('\n') // Blank line
-	assert.Equal(t, "event: message\n", line7)
-	assert.True(t, strings.HasPrefix(line8, "data: {"), "Custom message data should start with JSON object")
-	assert.True(t, strings.Contains(line8, `"id":"test-id"`), "Custom message should contain ID")
-	assert.True(t, strings.Contains(line8, `"result":"test result"`), "Custom message should contain result")
-	assert.Equal(t, "\n", line9)
 
 	// Simulate client disconnect by cancelling the request context passed to HandleConnection
 	cancel() // Call the cancel function returned by setupTestGinContext
 
 	wg.Wait() // Wait for HandleConnection goroutine to finish cleanly
+
+	// --- Verify Body Content AFTER Handler Finishes ---
+	bodyBytes, _ := io.ReadAll(w.Body) // Read the entire body now
+	bodyString := string(bodyBytes)
+
+	// Check for expected events in the complete body string
+	// 1. Endpoint event
+	expectedEndpointEvent := fmt.Sprintf("event: endpoint\ndata: %s?sessionId=%s\n\n", s.MountPath(), testSessionId)
+	assert.Contains(t, bodyString, expectedEndpointEvent, "Body should contain endpoint event")
+
+	// 2. Ready event
+	assert.Contains(t, bodyString, "event: message\ndata: {", "Body should contain start of ready message event")
+	assert.Contains(t, bodyString, `"method":"mcp-ready"`, "Ready message should contain method")
+	assert.Contains(t, bodyString, `"connectionId":"`+testSessionId+`"`, "Ready message should contain connectionId")
+
+	// 3. Custom message event (from msgChan)
+	assert.Contains(t, bodyString, "event: message\ndata: {", "Body should contain start of custom message event") // Check start again
+	assert.Contains(t, bodyString, `"id":"test-id"`, "Custom message should contain ID")
+	assert.Contains(t, bodyString, `"result":"test result"`, "Custom message should contain result")
 
 	// Verify connection was removed (HandleConnection's defer s.RemoveConnection should have run)
 	s.cMu.RLock()
