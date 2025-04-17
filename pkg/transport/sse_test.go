@@ -20,9 +20,14 @@ import (
 
 // --- Test Setup ---
 
+var setGinModeOnce sync.Once
+
 func setupTestSSETransport(mountPath string) *SSETransport {
 	// Ensure Gin is in release mode for tests to avoid debug prints
-	gin.SetMode(gin.ReleaseMode)
+	// Use sync.Once to ensure this is called only once per package test run.
+	setGinModeOnce.Do(func() {
+		gin.SetMode(gin.ReleaseMode)
+	})
 	return NewSSETransport(mountPath)
 }
 
