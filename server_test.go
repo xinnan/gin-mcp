@@ -584,3 +584,112 @@ func TestSetupServer_NotifyToolsChanged(t *testing.T) {
 }
 
 // TODO: Add tests for executeTool using mocks
+
+func TestGinMCPWithDocs(t *testing.T) {
+	// 设置Gin为测试模式
+	gin.SetMode(gin.TestMode)
+
+	// 创建路由
+	r := gin.New()
+
+	// 定义带注释的处理函数
+	// ListProducts 获取产品列表
+	// 返回分页的产品列表信息
+	// @param page 页码，从1开始
+	// @return 产品列表
+	listProducts := func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "list products"})
+	}
+
+	// GetProduct 获取单个产品详情
+	// 根据产品ID返回产品的详细信息
+	// @param id 产品ID
+	// @return 产品详情
+	getProduct := func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "get product"})
+	}
+
+	// CreateProduct 创建新产品
+	// 创建一个新的产品并返回创建结果
+	// @param product 产品信息
+	// @return 创建的产品信息
+	createProduct := func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "create product"})
+	}
+
+	// 注册路由
+	r.GET("/products", listProducts)
+	r.GET("/products/:id", getProduct)
+	r.POST("/products", createProduct)
+
+	// 创建MCP服务器
+	mcp := New(r, &Config{
+		Name:        "Test API",
+		Description: "Test API with docs",
+		BaseURL:     "http://localhost:8080",
+	})
+
+	// 定义请求和响应的结构体
+	type ListProductsParams struct {
+		Page int `form:"page" description:"页码，用于分页查询"`
+	}
+
+	type Product struct {
+		Name        string  `json:"name" description:"产品名称"`
+		Description string  `json:"description" description:"产品描述"`
+		Price       float64 `json:"price" description:"产品价格"`
+	}
+
+	// 注册Schema
+	mcp.RegisterSchema("GET", "/products", ListProductsParams{}, nil)
+	mcp.RegisterSchema("GET", "/products/:id", nil, nil)
+	mcp.RegisterSchema("POST", "/products", nil, Product{})
+
+	// 挂载MCP并设置服务器
+	mcp.Mount("/mcp")
+	err := mcp.SetupServer()
+	assert.NoError(t, err)
+
+	// 直接使用handleToolsList获取工具列表
+	req := &types.MCPMessage{
+		Jsonrpc: "2.0",
+		ID:      types.RawMessage(`"list-req-1"`),
+		Method:  "tools/list",
+	}
+
+	resp := mcp.handleToolsList(req)
+	assert.NotNil(t, resp)
+	assert.Nil(t, resp.Error)
+
+	// 从响应中获取工具列表
+	resultMap, ok := resp.Result.(map[string]interface{})
+	assert.True(t, ok)
+	assert.Contains(t, resultMap, "tools")
+	tools, ok := resultMap["tools"].([]types.Tool)
+	assert.True(t, ok)
+	assert.NotEmpty(t, tools)
+
+	// 验证工具列表中的各个工具
+	for _, tool := range tools {
+		switch tool.Name {
+		case "GET_products":
+			// 验证注释是否正确转换为描述
+			assert.Contains(t, tool.Description, "获取产品列表")
+			assert.Contains(t, tool.Description, "返回分页的产品列表信息")
+			// 验证参数描述
+			assert.NotNil(t, tool.InputSchema)
+			assert.Contains(t, tool.InputSchema.Properties["page"].Description, "页码")
+		case "GET_products_id":
+			assert.Contains(t, tool.Description, "获取单个产品详情")
+			assert.Contains(t, tool.Description, "根据产品ID返回产品的详细信息")
+		case "POST_products":
+			assert.Contains(t, tool.Description, "创建新产品")
+			assert.Contains(t, tool.Description, "创建一个新的产品并返回创建结果")
+			// 验证请求体schema
+			assert.NotNil(t, tool.InputSchema)
+			assert.Contains(t, tool.InputSchema.Properties["name"].Description, "产品名称")
+			assert.Contains(t, tool.InputSchema.Properties["description"].Description, "产品描述")
+			assert.Contains(t, tool.InputSchema.Properties["price"].Description, "产品价格")
+		}
+	}
+}
