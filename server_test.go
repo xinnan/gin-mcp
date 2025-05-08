@@ -592,35 +592,10 @@ func TestGinMCPWithDocs(t *testing.T) {
 	// 创建路由
 	r := gin.New()
 
-	// 定义带注释的处理函数
-	// ListProducts 获取产品列表
-	// 返回分页的产品列表信息
-	// @param page 页码，从1开始
-	// @return 产品列表
-	listProducts := func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "list products"})
-	}
-
-	// GetProduct 获取单个产品详情
-	// 根据产品ID返回产品的详细信息
-	// @param id 产品ID
-	// @return 产品详情
-	getProduct := func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "get product"})
-	}
-
-	// CreateProduct 创建新产品
-	// 创建一个新的产品并返回创建结果
-	// @param product 产品信息
-	// @return 创建的产品信息
-	createProduct := func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "create product"})
-	}
-
 	// 注册路由
-	r.GET("/products", listProducts)
-	r.GET("/products/:id", getProduct)
-	r.POST("/products", createProduct)
+	r.GET("/products", ListProducts)
+	r.GET("/products/:id", GetProduct)
+	r.POST("/products", CreateProduct)
 
 	// 创建MCP服务器
 	mcp := New(r, &Config{
@@ -692,4 +667,33 @@ func TestGinMCPWithDocs(t *testing.T) {
 			assert.Contains(t, tool.InputSchema.Properties["price"].Description, "产品价格")
 		}
 	}
+}
+
+
+
+// ListProducts 获取产品列表
+// @summary 获取产品列表
+// @description 返回分页的产品列表信息
+// @param page 页码，从1开始
+// @return 产品列表
+func ListProducts(c *gin.Context) {
+    c.JSON(200, gin.H{"message": "list products"})
+}
+
+// GetProduct 获取单个产品详情
+// @summary 获取单个产品详情
+// @description 根据产品ID返回产品的详细信息
+// @param id 产品ID
+// @return 产品详情
+func GetProduct(c *gin.Context) {
+    c.JSON(200, gin.H{"message": "get product"})
+}
+
+// CreateProduct 创建新产品
+// @summary 创建新产品
+// @description 创建一个新的产品并返回创建结果
+// @param product 产品信息
+// @return 创建的产品信息
+func CreateProduct(c *gin.Context) {
+    c.JSON(200, gin.H{"message": "create product"})
 }
