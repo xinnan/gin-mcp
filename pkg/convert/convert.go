@@ -253,48 +253,60 @@ type HandlerDoc struct {
 
 // 解析处理函数的注释
 func parseHandlerComments(filePath string, handlerName string) (*HandlerDoc, error) {
-    fset := token.NewFileSet()
-    f, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
-    if err != nil {
-        return nil, err
-    }
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+	if err != nil {
+		log.Printf("解析文件失败: %v", err)
+		return nil, err
+	}
 
-    var doc *HandlerDoc
-    ast.Inspect(f, func(n ast.Node) bool {
-        if fn, ok := n.(*ast.FuncDecl); ok {
-            if fn.Name.String() == handlerName {
-                doc = &HandlerDoc{
-                    Params: make(map[string]string),
-                }
-                if fn.Doc != nil {
-                    // 解析注释
-                    lines := strings.Split(fn.Doc.Text(), "\n")
-                    for _, line := range lines {
-                        line = strings.TrimSpace(line)
-                        switch {
-                        case strings.HasPrefix(line, "@summary"):
-                            doc.Summary = strings.TrimSpace(strings.TrimPrefix(line, "@summary"))
-                        case strings.HasPrefix(line, "@description"):
-                            doc.Description = strings.TrimSpace(strings.TrimPrefix(line, "@description"))
-                        case strings.HasPrefix(line, "@param"):
-                            paramText := strings.TrimSpace(strings.TrimPrefix(line, "@param"))
-                            parts := strings.SplitN(paramText, " ", 2)
-                            if len(parts) == 2 {
-                                paramName := strings.TrimSpace(parts[0])
-                                paramDesc := strings.TrimSpace(parts[1])
-                                doc.Params[paramName] = paramDesc
-                            }
-                        case strings.HasPrefix(line, "@return"):
-                            doc.Returns = strings.TrimSpace(strings.TrimPrefix(line, "@return"))
-                        }
-                    }
-                }
-            }
-        }
-        return true
-    })
+	log.Printf("正在查找函数: %s", handlerName)
+	var doc *HandlerDoc
 
-    return doc, nil
+	// 直接遍历顶层声明
+	for _, decl := range f.Decls {
+		if fn, ok := decl.(*ast.FuncDecl); ok {
+			log.Printf("找到函数声明: %s", fn.Name.String())
+			if fn.Name.String() == handlerName {
+				doc = &HandlerDoc{
+					Params: make(map[string]string),
+				}
+				if fn.Doc != nil {
+					log.Printf("函数 %s 的注释: %s", handlerName, fn.Doc.Text())
+					// 解析注释
+					lines := strings.Split(fn.Doc.Text(), "\n")
+					for _, line := range lines {
+						line = strings.TrimSpace(line)
+						log.Printf("处理注释行: %s", line)
+						switch {
+						case strings.HasPrefix(line, "@summary"):
+							doc.Summary = strings.TrimSpace(strings.TrimPrefix(line, "@summary"))
+							log.Printf("解析到 summary: %s", doc.Summary)
+						case strings.HasPrefix(line, "@description"):
+							doc.Description = strings.TrimSpace(strings.TrimPrefix(line, "@description"))
+							log.Printf("解析到 description: %s", doc.Description)
+						case strings.HasPrefix(line, "@param"):
+							paramText := strings.TrimSpace(strings.TrimPrefix(line, "@param"))
+							parts := strings.SplitN(paramText, " ", 2)
+							if len(parts) == 2 {
+								paramName := strings.TrimSpace(parts[0])
+								paramDesc := strings.TrimSpace(parts[1])
+								doc.Params[paramName] = paramDesc
+								log.Printf("解析到参数 %s: %s", paramName, paramDesc)
+							}
+						case strings.HasPrefix(line, "@return"):
+							doc.Returns = strings.TrimSpace(strings.TrimPrefix(line, "@return"))
+							log.Printf("解析到 return: %s", doc.Returns)
+						}
+					}
+				} else {
+					log.Printf("函数 %s 没有注释", handlerName)
+				}
+			}
+		}
+	}
+
+	return doc, nil
 }
 
 func getHandlerInfo(handler gin.HandlerFunc) (string, string) {
@@ -305,10 +317,23 @@ func getHandlerInfo(handler gin.HandlerFunc) (string, string) {
 	ptr := v.Pointer()
 
 	// 获取函数名
-	funcName := runtime.FuncForPC(ptr).Name()
+	funcInfo := runtime.FuncForPC(ptr)
+	if funcInfo == nil {
+		log.Printf("无法获取函数信息")
+		return "", ""
+	}
 
-	// 获取文件和行号
-	file, _ := runtime.FuncForPC(ptr).FileLine(ptr)
+	fullName := funcInfo.Name()
+	log.Printf("完整函数名: %s", fullName)
 
-	return file, funcName
+	// 获取文件路径和行号
+	filePath, line := funcInfo.FileLine(ptr)
+	log.Printf("文件路径: %s, 行号: %d", filePath, line)
+
+	// 从完整函数名中提取短函数名
+	parts := strings.Split(fullName, ".")
+	shortName := parts[len(parts)-1]
+	log.Printf("提取的短函数名: %s", shortName)
+
+	return filePath, shortName
 }
