@@ -2,6 +2,8 @@ package convert
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -474,4 +476,107 @@ func Test_getHandlerInfo(t *testing.T) {
 	if !strings.HasSuffix(filePath, ".go") {
 		t.Errorf("Expected .go file, got %s", filePath)
 	}
+}
+
+func TestParseHandlerComments(t *testing.T) {
+	// 创建一个临时的测试文件
+	tmpFile := `package test
+
+// ListProducts 获取产品列表
+// @summary 获取所有产品的列表
+// @description 返回分页的产品列表信息
+// @param page 页码，从1开始
+// @return 产品列表
+func ListProducts(c *gin.Context) {
+	// 实现
+}
+
+// GetProduct 获取单个产品
+// @summary 获取产品详情
+// @description 根据产品ID返回产品的详细信息
+// @param id 产品ID
+// @return 产品详情
+func GetProduct(c *gin.Context) {
+	// 实现
+}
+`
+	// 创建临时文件
+	tmpDir := t.TempDir()
+	tmpPath := filepath.Join(tmpDir, "handlers_test.go")
+	err := os.WriteFile(tmpPath, []byte(tmpFile), 0644)
+	assert.NoError(t, err)
+
+	// 测试 ListProducts 函数的注释解析
+	doc, err := parseHandlerComments(tmpPath, "ListProducts")
+	assert.NoError(t, err)
+	assert.NotNil(t, doc)
+	assert.Equal(t, "获取所有产品的列表", strings.TrimSpace(doc.Summary))
+	assert.Equal(t, "返回分页的产品列表信息", strings.TrimSpace(doc.Description))
+	assert.Equal(t, "页码，从1开始", strings.TrimSpace(doc.Params["page"]))
+	assert.Equal(t, "产品列表", strings.TrimSpace(doc.Returns))
+
+	// 测试 GetProduct 函数的注释解析
+	doc, err = parseHandlerComments(tmpPath, "GetProduct")
+	assert.NoError(t, err)
+	assert.NotNil(t, doc)
+	assert.Equal(t, "获取产品详情", strings.TrimSpace(doc.Summary))
+	assert.Equal(t, "根据产品ID返回产品的详细信息", strings.TrimSpace(doc.Description))
+	assert.Equal(t, "产品ID", strings.TrimSpace(doc.Params["id"]))
+	assert.Equal(t, "产品详情", strings.TrimSpace(doc.Returns))
+}
+
+func TestParseHandlerComments_EdgeCases(t *testing.T) {
+	// 创建一个包含边界情况的测试文件
+	tmpFile := `package test
+
+// EmptyDoc
+//
+func EmptyDoc(c *gin.Context) {}
+
+// MalformedTags
+// @summary
+// @param
+// @return
+func MalformedTags(c *gin.Context) {}
+
+// MultipleParams 多参数测试
+// @summary 测试多个参数
+// @param id 用户ID
+// @param name 用户名称
+// @param age 用户年龄
+// @return 用户信息
+func MultipleParams(c *gin.Context) {}
+`
+	// 创建临时文件
+	tmpDir := t.TempDir()
+	tmpPath := filepath.Join(tmpDir, "edge_cases_test.go")
+	err := os.WriteFile(tmpPath, []byte(tmpFile), 0644)
+	assert.NoError(t, err)
+
+	// 测试空文档
+	doc, err := parseHandlerComments(tmpPath, "EmptyDoc")
+	assert.NoError(t, err)
+	assert.NotNil(t, doc)
+	assert.Empty(t, doc.Summary)
+	assert.Empty(t, doc.Description)
+	assert.Empty(t, doc.Returns)
+	assert.Empty(t, doc.Params)
+
+	// 测试格式错误的标签
+	doc, err = parseHandlerComments(tmpPath, "MalformedTags")
+	assert.NoError(t, err)
+	assert.NotNil(t, doc)
+	assert.Empty(t, doc.Summary)
+	assert.Empty(t, doc.Returns)
+	assert.Empty(t, doc.Params)
+
+	// 测试多个参数
+	doc, err = parseHandlerComments(tmpPath, "MultipleParams")
+	assert.NoError(t, err)
+	assert.NotNil(t, doc)
+	assert.Equal(t, "测试多个参数", strings.TrimSpace(doc.Summary))
+	assert.Equal(t, "用户ID", strings.TrimSpace(doc.Params["id"]))
+	assert.Equal(t, "用户名称", strings.TrimSpace(doc.Params["name"]))
+	assert.Equal(t, "用户年龄", strings.TrimSpace(doc.Params["age"]))
+	assert.Equal(t, "用户信息", strings.TrimSpace(doc.Returns))
 }

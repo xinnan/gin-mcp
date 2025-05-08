@@ -253,44 +253,48 @@ type HandlerDoc struct {
 
 // 解析处理函数的注释
 func parseHandlerComments(filePath string, handlerName string) (*HandlerDoc, error) {
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
-	if err != nil {
-		return nil, err
-	}
+    fset := token.NewFileSet()
+    f, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+    if err != nil {
+        return nil, err
+    }
 
-	var doc *HandlerDoc
-	ast.Inspect(f, func(n ast.Node) bool {
-		if fn, ok := n.(*ast.FuncDecl); ok {
-			if fn.Name.String() == handlerName {
-				doc = &HandlerDoc{
-					Params: make(map[string]string),
-				}
-				if fn.Doc != nil {
-					// 解析注释
-					lines := strings.Split(fn.Doc.Text(), "\n")
-					for _, line := range lines {
-						line = strings.TrimSpace(line)
-						if strings.HasPrefix(line, "@summary") {
-							doc.Summary = strings.TrimPrefix(line, "@summary")
-						} else if strings.HasPrefix(line, "@description") {
-							doc.Description = strings.TrimPrefix(line, "@description")
-						} else if strings.HasPrefix(line, "@param") {
-							parts := strings.SplitN(strings.TrimPrefix(line, "@param"), " ", 2)
-							if len(parts) == 2 {
-								doc.Params[parts[0]] = parts[1]
-							}
-						} else if strings.HasPrefix(line, "@return") {
-							doc.Returns = strings.TrimPrefix(line, "@return")
-						}
-					}
-				}
-			}
-		}
-		return true
-	})
+    var doc *HandlerDoc
+    ast.Inspect(f, func(n ast.Node) bool {
+        if fn, ok := n.(*ast.FuncDecl); ok {
+            if fn.Name.String() == handlerName {
+                doc = &HandlerDoc{
+                    Params: make(map[string]string),
+                }
+                if fn.Doc != nil {
+                    // 解析注释
+                    lines := strings.Split(fn.Doc.Text(), "\n")
+                    for _, line := range lines {
+                        line = strings.TrimSpace(line)
+                        switch {
+                        case strings.HasPrefix(line, "@summary"):
+                            doc.Summary = strings.TrimSpace(strings.TrimPrefix(line, "@summary"))
+                        case strings.HasPrefix(line, "@description"):
+                            doc.Description = strings.TrimSpace(strings.TrimPrefix(line, "@description"))
+                        case strings.HasPrefix(line, "@param"):
+                            paramText := strings.TrimSpace(strings.TrimPrefix(line, "@param"))
+                            parts := strings.SplitN(paramText, " ", 2)
+                            if len(parts) == 2 {
+                                paramName := strings.TrimSpace(parts[0])
+                                paramDesc := strings.TrimSpace(parts[1])
+                                doc.Params[paramName] = paramDesc
+                            }
+                        case strings.HasPrefix(line, "@return"):
+                            doc.Returns = strings.TrimSpace(strings.TrimPrefix(line, "@return"))
+                        }
+                    }
+                }
+            }
+        }
+        return true
+    })
 
-	return doc, nil
+    return doc, nil
 }
 
 func getHandlerInfo(handler gin.HandlerFunc) (string, string) {
