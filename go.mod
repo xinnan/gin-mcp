@@ -1,9 +1,8 @@
-module github.com/your-username/gin-mcp
+module github.com/ckanthony/gin-mcp
 
 go 1.21
 
 require (
-	github.com/ckanthony/gin-mcp v0.0.0-20250417182845-f4b2a61e501f
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/sirupsen/logrus v1.9.3
@@ -40,3 +39,5 @@ require (
 	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+// replace github.com/ckanthony/gin-mcp => ./
