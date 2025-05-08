@@ -653,10 +653,14 @@ func TestGinMCPWithDocs(t *testing.T) {
 			assert.Contains(t, tool.Description, "返回分页的产品列表信息")
 			// 验证参数描述
 			assert.NotNil(t, tool.InputSchema)
-			assert.Contains(t, tool.InputSchema.Properties["page"].Description, "页码")
+			assert.Contains(t, tool.InputSchema.Properties["page"].Description, "页码，用于分页查询")
+
 		case "GET_products_id":
 			assert.Contains(t, tool.Description, "获取单个产品详情")
 			assert.Contains(t, tool.Description, "根据产品ID返回产品的详细信息")
+			assert.NotNil(t, tool.InputSchema)
+			assert.Contains(t, tool.InputSchema.Properties["id"].Description, "产品ID")
+
 		case "POST_products":
 			assert.Contains(t, tool.Description, "创建新产品")
 			assert.Contains(t, tool.Description, "创建一个新的产品并返回创建结果")
@@ -669,15 +673,13 @@ func TestGinMCPWithDocs(t *testing.T) {
 	}
 }
 
-
-
 // ListProducts 获取产品列表
 // @summary 获取产品列表
 // @description 返回分页的产品列表信息
-// @param page 页码，从1开始
+// @param page 页码，用于分页查询
 // @return 产品列表
 func ListProducts(c *gin.Context) {
-    c.JSON(200, gin.H{"message": "list products"})
+	c.JSON(200, gin.H{"message": "list products"})
 }
 
 // GetProduct 获取单个产品详情
@@ -686,14 +688,16 @@ func ListProducts(c *gin.Context) {
 // @param id 产品ID
 // @return 产品详情
 func GetProduct(c *gin.Context) {
-    c.JSON(200, gin.H{"message": "get product"})
+	c.JSON(200, gin.H{"message": "get product"})
 }
 
 // CreateProduct 创建新产品
 // @summary 创建新产品
 // @description 创建一个新的产品并返回创建结果
-// @param product 产品信息
+// @param name 产品名称
+// @param description 产品描述
+// @param price 产品价格
 // @return 创建的产品信息
 func CreateProduct(c *gin.Context) {
-    c.JSON(200, gin.H{"message": "create product"})
+	c.JSON(200, gin.H{"message": "create product"})
 }
