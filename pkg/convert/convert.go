@@ -255,35 +255,29 @@ func parseHandlerComments(filePath string, handlerName string) (*HandlerDoc, err
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
 	if err != nil {
-		log.Printf("Failed to parse file: %v", err)
+		log.Printf("Failed to parse file %s: %v", filePath, err)
 		return nil, err
 	}
 
-	log.Printf("Looking for function: %s", handlerName)
 	var doc *HandlerDoc
 
 	// Iterate through top-level declarations
 	for _, decl := range f.Decls {
 		if fn, ok := decl.(*ast.FuncDecl); ok {
-			log.Printf("Found function declaration: %s", fn.Name.String())
 			if fn.Name.String() == handlerName {
 				doc = &HandlerDoc{
 					Params: make(map[string]string),
 				}
 				if fn.Doc != nil {
-					log.Printf("Function %s comments: %s", handlerName, fn.Doc.Text())
 					// Parse comments
 					lines := strings.Split(fn.Doc.Text(), "\n")
 					for _, line := range lines {
 						line = strings.TrimSpace(line)
-						log.Printf("Processing comment line: %s", line)
 						switch {
 						case strings.HasPrefix(line, "@summary"):
 							doc.Summary = strings.TrimSpace(strings.TrimPrefix(line, "@summary"))
-							log.Printf("Parsed summary: %s", doc.Summary)
 						case strings.HasPrefix(line, "@description"):
 							doc.Description = strings.TrimSpace(strings.TrimPrefix(line, "@description"))
-							log.Printf("Parsed description: %s", doc.Description)
 						case strings.HasPrefix(line, "@param"):
 							paramText := strings.TrimSpace(strings.TrimPrefix(line, "@param"))
 							parts := strings.SplitN(paramText, " ", 2)
@@ -291,15 +285,11 @@ func parseHandlerComments(filePath string, handlerName string) (*HandlerDoc, err
 								paramName := strings.TrimSpace(parts[0])
 								paramDesc := strings.TrimSpace(parts[1])
 								doc.Params[paramName] = paramDesc
-								log.Printf("Parsed parameter %s: %s", paramName, paramDesc)
 							}
 						case strings.HasPrefix(line, "@return"):
 							doc.Returns = strings.TrimSpace(strings.TrimPrefix(line, "@return"))
-							log.Printf("Parsed return: %s", doc.Returns)
 						}
 					}
-				} else {
-					log.Printf("Function %s has no comments", handlerName)
 				}
 			}
 		}
@@ -311,28 +301,20 @@ func parseHandlerComments(filePath string, handlerName string) (*HandlerDoc, err
 func getHandlerInfo(handler gin.HandlerFunc) (string, string) {
 	// Get function reflection value
 	v := reflect.ValueOf(handler)
-
-	// Get function pointer
 	ptr := v.Pointer()
 
-	// Get function name
+	// Get function name and info
 	funcInfo := runtime.FuncForPC(ptr)
 	if funcInfo == nil {
-		log.Printf("Unable to get function information")
 		return "", ""
 	}
 
 	fullName := funcInfo.Name()
-	log.Printf("Full function name: %s", fullName)
-
-	// Get file path and line number
-	filePath, line := funcInfo.FileLine(ptr)
-	log.Printf("File path: %s, line number: %d", filePath, line)
+	filePath, _ := funcInfo.FileLine(ptr)
 
 	// Extract short function name from full name
 	parts := strings.Split(fullName, ".")
 	shortName := parts[len(parts)-1]
-	log.Printf("Extracted short function name: %s", shortName)
 
 	return filePath, shortName
 }
