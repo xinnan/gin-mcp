@@ -38,10 +38,10 @@ func ConvertRoutesToTools(routes gin.RoutesInfo, registeredSchemas map[string]ty
 			log.Printf("Processing route: %s %s -> OpID: %s", route.Method, route.Path, operationID)
 		}
 		filePath, handlerName := getHandlerInfo(route.HandlerFunc)
-		// 获取处理函数的注释
+		// Parse handler function comments
 		handlerDoc, _ := parseHandlerComments(filePath, handlerName)
 
-		// 生成描述信息
+		// Generate description information
 		description := fmt.Sprintf("Handler for %s %s", route.Method, route.Path)
 		if handlerDoc != nil {
 			if handlerDoc.Summary != "" {
@@ -55,7 +55,7 @@ func ConvertRoutesToTools(routes gin.RoutesInfo, registeredSchemas map[string]ty
 		// Generate schema for the tool's input
 		inputSchema := generateInputSchema(route, registeredSchemas)
 
-		// 如果有参数注释，添加到schema的description中
+		// Add parameter descriptions to schema if available
 		if handlerDoc != nil && len(handlerDoc.Params) > 0 {
 			for paramName, paramDesc := range handlerDoc.Params {
 				if prop, ok := inputSchema.Properties[paramName]; ok {

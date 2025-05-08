@@ -586,25 +586,25 @@ func TestSetupServer_NotifyToolsChanged(t *testing.T) {
 // TODO: Add tests for executeTool using mocks
 
 func TestGinMCPWithDocs(t *testing.T) {
-	// 设置Gin为测试模式
+	// Set Gin to test mode
 	gin.SetMode(gin.TestMode)
 
-	// 创建路由
+	// Create router
 	r := gin.New()
 
-	// 注册路由
+	// Register routes
 	r.GET("/products", ListProducts)
 	r.GET("/products/:id", GetProduct)
 	r.POST("/products", CreateProduct)
 
-	// 创建MCP服务器
+	// Create MCP server
 	mcp := New(r, &Config{
 		Name:        "Test API",
 		Description: "Test API with docs",
 		BaseURL:     "http://localhost:8080",
 	})
 
-	// 定义请求和响应的结构体
+	// Define request and response structures
 	type ListProductsParams struct {
 		Page int `form:"page" description:"Page number for pagination"`
 	}
@@ -615,17 +615,17 @@ func TestGinMCPWithDocs(t *testing.T) {
 		Price       float64 `json:"price" description:"Product price"`
 	}
 
-	// 注册Schema
+	// Register schemas
 	mcp.RegisterSchema("GET", "/products", ListProductsParams{}, nil)
 	mcp.RegisterSchema("GET", "/products/:id", nil, nil)
 	mcp.RegisterSchema("POST", "/products", nil, Product{})
 
-	// 挂载MCP并设置服务器
+	// Mount MCP and setup server
 	mcp.Mount("/mcp")
 	err := mcp.SetupServer()
 	assert.NoError(t, err)
 
-	// 直接使用handleToolsList获取工具列表
+	// Get tools list using handleToolsList directly
 	req := &types.MCPMessage{
 		Jsonrpc: "2.0",
 		ID:      types.RawMessage(`"list-req-1"`),
@@ -636,7 +636,7 @@ func TestGinMCPWithDocs(t *testing.T) {
 	assert.NotNil(t, resp)
 	assert.Nil(t, resp.Error)
 
-	// 从响应中获取工具列表
+	// Get tools list from response
 	resultMap, ok := resp.Result.(map[string]interface{})
 	assert.True(t, ok)
 	assert.Contains(t, resultMap, "tools")
@@ -644,7 +644,7 @@ func TestGinMCPWithDocs(t *testing.T) {
 	assert.True(t, ok)
 	assert.NotEmpty(t, tools)
 
-	// 验证工具列表中的各个工具
+	// Verify tools in the list
 	for _, tool := range tools {
 		switch tool.Name {
 		case "GET_products":
