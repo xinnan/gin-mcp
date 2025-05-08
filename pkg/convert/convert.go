@@ -242,8 +242,7 @@ func reflectAndAddProperties(goType interface{}, properties map[string]*types.JS
 	}
 }
 
-// 新增的注释解析工具
-// 存储函数注释的结构
+// HandlerDoc stores function documentation
 type HandlerDoc struct {
 	Summary     string
 	Description string
@@ -251,40 +250,40 @@ type HandlerDoc struct {
 	Returns     string
 }
 
-// 解析处理函数的注释
+// parseHandlerComments parses function documentation from source code
 func parseHandlerComments(filePath string, handlerName string) (*HandlerDoc, error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
 	if err != nil {
-		log.Printf("解析文件失败: %v", err)
+		log.Printf("Failed to parse file: %v", err)
 		return nil, err
 	}
 
-	log.Printf("正在查找函数: %s", handlerName)
+	log.Printf("Looking for function: %s", handlerName)
 	var doc *HandlerDoc
 
-	// 直接遍历顶层声明
+	// Iterate through top-level declarations
 	for _, decl := range f.Decls {
 		if fn, ok := decl.(*ast.FuncDecl); ok {
-			log.Printf("找到函数声明: %s", fn.Name.String())
+			log.Printf("Found function declaration: %s", fn.Name.String())
 			if fn.Name.String() == handlerName {
 				doc = &HandlerDoc{
 					Params: make(map[string]string),
 				}
 				if fn.Doc != nil {
-					log.Printf("函数 %s 的注释: %s", handlerName, fn.Doc.Text())
-					// 解析注释
+					log.Printf("Function %s comments: %s", handlerName, fn.Doc.Text())
+					// Parse comments
 					lines := strings.Split(fn.Doc.Text(), "\n")
 					for _, line := range lines {
 						line = strings.TrimSpace(line)
-						log.Printf("处理注释行: %s", line)
+						log.Printf("Processing comment line: %s", line)
 						switch {
 						case strings.HasPrefix(line, "@summary"):
 							doc.Summary = strings.TrimSpace(strings.TrimPrefix(line, "@summary"))
-							log.Printf("解析到 summary: %s", doc.Summary)
+							log.Printf("Parsed summary: %s", doc.Summary)
 						case strings.HasPrefix(line, "@description"):
 							doc.Description = strings.TrimSpace(strings.TrimPrefix(line, "@description"))
-							log.Printf("解析到 description: %s", doc.Description)
+							log.Printf("Parsed description: %s", doc.Description)
 						case strings.HasPrefix(line, "@param"):
 							paramText := strings.TrimSpace(strings.TrimPrefix(line, "@param"))
 							parts := strings.SplitN(paramText, " ", 2)
@@ -292,15 +291,15 @@ func parseHandlerComments(filePath string, handlerName string) (*HandlerDoc, err
 								paramName := strings.TrimSpace(parts[0])
 								paramDesc := strings.TrimSpace(parts[1])
 								doc.Params[paramName] = paramDesc
-								log.Printf("解析到参数 %s: %s", paramName, paramDesc)
+								log.Printf("Parsed parameter %s: %s", paramName, paramDesc)
 							}
 						case strings.HasPrefix(line, "@return"):
 							doc.Returns = strings.TrimSpace(strings.TrimPrefix(line, "@return"))
-							log.Printf("解析到 return: %s", doc.Returns)
+							log.Printf("Parsed return: %s", doc.Returns)
 						}
 					}
 				} else {
-					log.Printf("函数 %s 没有注释", handlerName)
+					log.Printf("Function %s has no comments", handlerName)
 				}
 			}
 		}
@@ -310,30 +309,30 @@ func parseHandlerComments(filePath string, handlerName string) (*HandlerDoc, err
 }
 
 func getHandlerInfo(handler gin.HandlerFunc) (string, string) {
-	// 获取函数的反射值
+	// Get function reflection value
 	v := reflect.ValueOf(handler)
 
-	// 获取函数指针
+	// Get function pointer
 	ptr := v.Pointer()
 
-	// 获取函数名
+	// Get function name
 	funcInfo := runtime.FuncForPC(ptr)
 	if funcInfo == nil {
-		log.Printf("无法获取函数信息")
+		log.Printf("Unable to get function information")
 		return "", ""
 	}
 
 	fullName := funcInfo.Name()
-	log.Printf("完整函数名: %s", fullName)
+	log.Printf("Full function name: %s", fullName)
 
-	// 获取文件路径和行号
+	// Get file path and line number
 	filePath, line := funcInfo.FileLine(ptr)
-	log.Printf("文件路径: %s, 行号: %d", filePath, line)
+	log.Printf("File path: %s, line number: %d", filePath, line)
 
-	// 从完整函数名中提取短函数名
+	// Extract short function name from full name
 	parts := strings.Split(fullName, ".")
 	shortName := parts[len(parts)-1]
-	log.Printf("提取的短函数名: %s", shortName)
+	log.Printf("Extracted short function name: %s", shortName)
 
 	return filePath, shortName
 }

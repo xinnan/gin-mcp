@@ -312,10 +312,10 @@ func TestRegisterSchema(t *testing.T) {
 	mcp := New(gin.New(), nil)
 
 	type QueryParams struct {
-		Page int `form:"page"`
+		Page int `form:"page" description:"Page number for pagination"`
 	}
 	type Body struct {
-		Name string `json:"name"`
+		Name string `json:"name" description:"Product name"`
 	}
 
 	// Test valid registration
@@ -606,13 +606,13 @@ func TestGinMCPWithDocs(t *testing.T) {
 
 	// 定义请求和响应的结构体
 	type ListProductsParams struct {
-		Page int `form:"page" description:"页码，用于分页查询"`
+		Page int `form:"page" description:"Page number for pagination"`
 	}
 
 	type Product struct {
-		Name        string  `json:"name" description:"产品名称"`
-		Description string  `json:"description" description:"产品描述"`
-		Price       float64 `json:"price" description:"产品价格"`
+		Name        string  `json:"name" description:"Product name"`
+		Description string  `json:"description" description:"Product description"`
+		Price       float64 `json:"price" description:"Product price"`
 	}
 
 	// 注册Schema
@@ -648,56 +648,56 @@ func TestGinMCPWithDocs(t *testing.T) {
 	for _, tool := range tools {
 		switch tool.Name {
 		case "GET_products":
-			// 验证注释是否正确转换为描述
-			assert.Contains(t, tool.Description, "获取产品列表")
-			assert.Contains(t, tool.Description, "返回分页的产品列表信息")
-			// 验证参数描述
+			// Verify comment conversion to description
+			assert.Contains(t, tool.Description, "Get product list")
+			assert.Contains(t, tool.Description, "Returns a paginated list of products")
+			// Verify parameter description
 			assert.NotNil(t, tool.InputSchema)
-			assert.Contains(t, tool.InputSchema.Properties["page"].Description, "页码，用于分页查询")
+			assert.Contains(t, tool.InputSchema.Properties["page"].Description, "Page number for pagination")
 
 		case "GET_products_id":
-			assert.Contains(t, tool.Description, "获取单个产品详情")
-			assert.Contains(t, tool.Description, "根据产品ID返回产品的详细信息")
+			assert.Contains(t, tool.Description, "Get product details")
+			assert.Contains(t, tool.Description, "Returns detailed information for a specific product")
 			assert.NotNil(t, tool.InputSchema)
-			assert.Contains(t, tool.InputSchema.Properties["id"].Description, "产品ID")
+			assert.Contains(t, tool.InputSchema.Properties["id"].Description, "Product ID")
 
 		case "POST_products":
-			assert.Contains(t, tool.Description, "创建新产品")
-			assert.Contains(t, tool.Description, "创建一个新的产品并返回创建结果")
-			// 验证请求体schema
+			assert.Contains(t, tool.Description, "Create new product")
+			assert.Contains(t, tool.Description, "Creates a new product and returns the creation result")
+			// Verify request body schema
 			assert.NotNil(t, tool.InputSchema)
-			assert.Contains(t, tool.InputSchema.Properties["name"].Description, "产品名称")
-			assert.Contains(t, tool.InputSchema.Properties["description"].Description, "产品描述")
-			assert.Contains(t, tool.InputSchema.Properties["price"].Description, "产品价格")
+			assert.Contains(t, tool.InputSchema.Properties["name"].Description, "Product name")
+			assert.Contains(t, tool.InputSchema.Properties["description"].Description, "Product description")
+			assert.Contains(t, tool.InputSchema.Properties["price"].Description, "Product price")
 		}
 	}
 }
 
-// ListProducts 获取产品列表
-// @summary 获取产品列表
-// @description 返回分页的产品列表信息
-// @param page 页码，用于分页查询
-// @return 产品列表
+// ListProducts handles product list retrieval
+// @summary Get product list
+// @description Returns a paginated list of products
+// @param page Page number for pagination, starting from 1
+// @return List of products
 func ListProducts(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "list products"})
 }
 
-// GetProduct 获取单个产品详情
-// @summary 获取单个产品详情
-// @description 根据产品ID返回产品的详细信息
-// @param id 产品ID
-// @return 产品详情
+// GetProduct handles single product retrieval
+// @summary Get product details
+// @description Returns detailed information for a specific product
+// @param id Product ID
+// @return Product details
 func GetProduct(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "get product"})
 }
 
-// CreateProduct 创建新产品
-// @summary 创建新产品
-// @description 创建一个新的产品并返回创建结果
-// @param name 产品名称
-// @param description 产品描述
-// @param price 产品价格
-// @return 创建的产品信息
+// CreateProduct handles new product creation
+// @summary Create new product
+// @description Creates a new product and returns the creation result
+// @param name Product name
+// @param description Product description
+// @param price Product price
+// @return Created product information
 func CreateProduct(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "create product"})
 }

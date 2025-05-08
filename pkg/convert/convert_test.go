@@ -479,54 +479,53 @@ func Test_getHandlerInfo(t *testing.T) {
 }
 
 func TestParseHandlerComments(t *testing.T) {
-	// 创建一个临时的测试文件
+	// Create a temporary test file
 	tmpFile := `package test
 
-// ListProducts 获取产品列表
-// @summary 获取所有产品的列表
-// @description 返回分页的产品列表信息
-// @param page 页码，从1开始
-// @return 产品列表
+// ListProducts handles product list retrieval
+// @summary Get product list
+// @description Returns a paginated list of products
+// @param page Page number for pagination, starting from 1
+// @return List of products
 func ListProducts(c *gin.Context) {
-	// 实现
+	// Implementation
 }
 
-// GetProduct 获取单个产品
-// @summary 获取产品详情
-// @description 根据产品ID返回产品的详细信息
-// @param id 产品ID
-// @return 产品详情
+// GetProduct handles single product retrieval
+// @summary Get product details
+// @description Returns detailed information for a specific product
+// @param id Product ID
+// @return Product details
 func GetProduct(c *gin.Context) {
-	// 实现
+	// Implementation
 }
 `
-	// 创建临时文件
+	// Create temporary file
 	tmpDir := t.TempDir()
 	tmpPath := filepath.Join(tmpDir, "handlers_test.go")
 	err := os.WriteFile(tmpPath, []byte(tmpFile), 0644)
 	assert.NoError(t, err)
 
-	// 测试 ListProducts 函数的注释解析
+	// Test ListProducts function comments
 	doc, err := parseHandlerComments(tmpPath, "ListProducts")
 	assert.NoError(t, err)
 	assert.NotNil(t, doc)
-	assert.Equal(t, "获取所有产品的列表", strings.TrimSpace(doc.Summary))
-	assert.Equal(t, "返回分页的产品列表信息", strings.TrimSpace(doc.Description))
-	assert.Equal(t, "页码，从1开始", strings.TrimSpace(doc.Params["page"]))
-	assert.Equal(t, "产品列表", strings.TrimSpace(doc.Returns))
+	assert.Equal(t, "Get product list", strings.TrimSpace(doc.Summary))
+	assert.Equal(t, "Returns a paginated list of products", strings.TrimSpace(doc.Description))
+	assert.Equal(t, "Page number for pagination, starting from 1", strings.TrimSpace(doc.Params["page"]))
+	assert.Equal(t, "List of products", strings.TrimSpace(doc.Returns))
 
-	// 测试 GetProduct 函数的注释解析
+	// Test GetProduct function comments
 	doc, err = parseHandlerComments(tmpPath, "GetProduct")
 	assert.NoError(t, err)
 	assert.NotNil(t, doc)
-	assert.Equal(t, "获取产品详情", strings.TrimSpace(doc.Summary))
-	assert.Equal(t, "根据产品ID返回产品的详细信息", strings.TrimSpace(doc.Description))
-	assert.Equal(t, "产品ID", strings.TrimSpace(doc.Params["id"]))
-	assert.Equal(t, "产品详情", strings.TrimSpace(doc.Returns))
+	assert.Equal(t, "Get product details", strings.TrimSpace(doc.Summary))
+	assert.Equal(t, "Returns detailed information for a specific product", strings.TrimSpace(doc.Description))
+	assert.Equal(t, "Product ID", strings.TrimSpace(doc.Params["id"]))
+	assert.Equal(t, "Product details", strings.TrimSpace(doc.Returns))
 }
 
 func TestParseHandlerComments_EdgeCases(t *testing.T) {
-	// 创建一个包含边界情况的测试文件
 	tmpFile := `package test
 
 // EmptyDoc
@@ -539,21 +538,21 @@ func EmptyDoc(c *gin.Context) {}
 // @return
 func MalformedTags(c *gin.Context) {}
 
-// MultipleParams 多参数测试
-// @summary 测试多个参数
-// @param id 用户ID
-// @param name 用户名称
-// @param age 用户年龄
-// @return 用户信息
+// MultipleParams test with multiple parameters
+// @summary Test multiple parameters
+// @param id User ID
+// @param name Username
+// @param age User age
+// @return User information
 func MultipleParams(c *gin.Context) {}
 `
-	// 创建临时文件
+	// Create temporary file
 	tmpDir := t.TempDir()
 	tmpPath := filepath.Join(tmpDir, "edge_cases_test.go")
 	err := os.WriteFile(tmpPath, []byte(tmpFile), 0644)
 	assert.NoError(t, err)
 
-	// 测试空文档
+	// Test empty document
 	doc, err := parseHandlerComments(tmpPath, "EmptyDoc")
 	assert.NoError(t, err)
 	assert.NotNil(t, doc)
@@ -562,7 +561,7 @@ func MultipleParams(c *gin.Context) {}
 	assert.Empty(t, doc.Returns)
 	assert.Empty(t, doc.Params)
 
-	// 测试格式错误的标签
+	// Test malformed tags
 	doc, err = parseHandlerComments(tmpPath, "MalformedTags")
 	assert.NoError(t, err)
 	assert.NotNil(t, doc)
@@ -570,13 +569,13 @@ func MultipleParams(c *gin.Context) {}
 	assert.Empty(t, doc.Returns)
 	assert.Empty(t, doc.Params)
 
-	// 测试多个参数
+	// Test multiple parameters
 	doc, err = parseHandlerComments(tmpPath, "MultipleParams")
 	assert.NoError(t, err)
 	assert.NotNil(t, doc)
-	assert.Equal(t, "测试多个参数", strings.TrimSpace(doc.Summary))
-	assert.Equal(t, "用户ID", strings.TrimSpace(doc.Params["id"]))
-	assert.Equal(t, "用户名称", strings.TrimSpace(doc.Params["name"]))
-	assert.Equal(t, "用户年龄", strings.TrimSpace(doc.Params["age"]))
-	assert.Equal(t, "用户信息", strings.TrimSpace(doc.Returns))
+	assert.Equal(t, "Test multiple parameters", strings.TrimSpace(doc.Summary))
+	assert.Equal(t, "User ID", strings.TrimSpace(doc.Params["id"]))
+	assert.Equal(t, "Username", strings.TrimSpace(doc.Params["name"]))
+	assert.Equal(t, "User age", strings.TrimSpace(doc.Params["age"]))
+	assert.Equal(t, "User information", strings.TrimSpace(doc.Returns))
 }
