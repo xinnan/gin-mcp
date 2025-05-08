@@ -3,6 +3,7 @@ package convert
 import (
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/ckanthony/gin-mcp/pkg/types"
@@ -442,4 +443,35 @@ func TestReflectTypeHelper(t *testing.T) { // Assuming types.ReflectType exists 
 	assert.Equal(t, reflect.Struct, rt.Kind())
 	assert.Equal(t, reflect.Struct, prt.Kind())
 	assert.Equal(t, rt, prt, "ReflectType should return the underlying struct type for both value and pointer")
+}
+
+// handler 是我们要测试的处理函数
+// @summary 测试处理器
+// @description 这是一个用于测试的处理器
+// @param id 用户ID
+func handler(c *gin.Context) {
+	c.JSON(200, gin.H{"message": "test"})
+}
+
+func Test_getHandlerInfo(t *testing.T) {
+	// 获取handler信息
+	filePath, funcName := getHandlerInfo(handler)
+
+	t.Logf("File Path: %s", filePath)
+	t.Logf("Function Name: %s", funcName)
+
+	// 验证函数名是否包含handler
+	if funcName == "" || !strings.Contains(funcName, "handler") {
+		t.Errorf("Expected function name to contain 'handler', got %s", funcName)
+	}
+
+	// 验证文件路径是否存在
+	if filePath == "" {
+		t.Error("File path should not be empty")
+	}
+
+	// 验证文件路径是否包含.go后缀
+	if !strings.HasSuffix(filePath, ".go") {
+		t.Errorf("Expected .go file, got %s", filePath)
+	}
 }

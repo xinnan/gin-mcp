@@ -4,7 +4,12 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strings"
+
+	"go/ast"
+	"go/parser"
+	"go/token"
 
 	"github.com/ckanthony/gin-mcp/pkg/types"
 	"github.com/gin-gonic/gin"
@@ -32,14 +37,36 @@ func ConvertRoutesToTools(routes gin.RoutesInfo, registeredSchemas map[string]ty
 		if isDebugMode() {
 			log.Printf("Processing route: %s %s -> OpID: %s", route.Method, route.Path, operationID)
 		}
+		filePath, handlerName := getHandlerInfo(route.HandlerFunc)
+		// 获取处理函数的注释
+		handlerDoc, _ := parseHandlerComments(filePath, handlerName)
+
+		// 生成描述信息
+		description := fmt.Sprintf("Handler for %s %s", route.Method, route.Path)
+		if handlerDoc != nil {
+			if handlerDoc.Summary != "" {
+				description = handlerDoc.Summary
+			}
+			if handlerDoc.Description != "" {
+				description += "\n\n" + handlerDoc.Description
+			}
+		}
 
 		// Generate schema for the tool's input
 		inputSchema := generateInputSchema(route, registeredSchemas)
 
-		// Create the tool definition
+		// 如果有参数注释，添加到schema的description中
+		if handlerDoc != nil && len(handlerDoc.Params) > 0 {
+			for paramName, paramDesc := range handlerDoc.Params {
+				if prop, ok := inputSchema.Properties[paramName]; ok {
+					prop.Description = paramDesc
+				}
+			}
+		}
+
 		tool := types.Tool{
 			Name:        operationID,
-			Description: fmt.Sprintf("Handler for %s %s", route.Method, route.Path), // Use route info for description
+			Description: description,
 			InputSchema: inputSchema,
 		}
 
@@ -213,4 +240,71 @@ func reflectAndAddProperties(goType interface{}, properties map[string]*types.JS
 			*required = append(*required, fieldName)
 		}
 	}
+}
+
+// 新增的注释解析工具
+// 存储函数注释的结构
+type HandlerDoc struct {
+	Summary     string
+	Description string
+	Params      map[string]string
+	Returns     string
+}
+
+// 解析处理函数的注释
+func parseHandlerComments(filePath string, handlerName string) (*HandlerDoc, error) {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+	if err != nil {
+		return nil, err
+	}
+
+	var doc *HandlerDoc
+	ast.Inspect(f, func(n ast.Node) bool {
+		if fn, ok := n.(*ast.FuncDecl); ok {
+			if fn.Name.String() == handlerName {
+				doc = &HandlerDoc{
+					Params: make(map[string]string),
+				}
+				if fn.Doc != nil {
+					// 解析注释
+					lines := strings.Split(fn.Doc.Text(), "\n")
+					for _, line := range lines {
+						line = strings.TrimSpace(line)
+						if strings.HasPrefix(line, "@summary") {
+							doc.Summary = strings.TrimPrefix(line, "@summary")
+						} else if strings.HasPrefix(line, "@description") {
+							doc.Description = strings.TrimPrefix(line, "@description")
+						} else if strings.HasPrefix(line, "@param") {
+							parts := strings.SplitN(strings.TrimPrefix(line, "@param"), " ", 2)
+							if len(parts) == 2 {
+								doc.Params[parts[0]] = parts[1]
+							}
+						} else if strings.HasPrefix(line, "@return") {
+							doc.Returns = strings.TrimPrefix(line, "@return")
+						}
+					}
+				}
+			}
+		}
+		return true
+	})
+
+	return doc, nil
+}
+
+func getHandlerInfo(handler gin.HandlerFunc) (string, string) {
+	// 获取函数的反射值
+	v := reflect.ValueOf(handler)
+
+	// 获取函数指针
+	ptr := v.Pointer()
+
+	// 获取函数名
+	funcName := runtime.FuncForPC(ptr).Name()
+
+	// 获取文件和行号
+	file, _ := runtime.FuncForPC(ptr).FileLine(ptr)
+
+	return file, funcName
 }
