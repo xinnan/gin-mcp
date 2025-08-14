@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -88,6 +89,12 @@ func New(engine *gin.Engine, config *Config) *GinMCP {
 	}
 
 	return m
+}
+
+// SetExecuteToolFunc allows overriding the default tool execution function.
+// This is useful for implementing dynamic baseURL resolution or custom execution logic.
+func (m *GinMCP) SetExecuteToolFunc(fn func(operationID string, parameters map[string]interface{}) (interface{}, error)) {
+	m.executeToolFunc = fn
 }
 
 // RegisterSchema associates Go struct types with a specific route for automatic schema generation.
@@ -494,8 +501,43 @@ func (m *GinMCP) filterTools() {
 	}
 }
 
+// ExecuteToolWithDynamicURL executes a tool with a dynamically resolved baseURL.
+// This is a helper function for implementing custom executeToolFunc with dynamic baseURL logic.
+func (m *GinMCP) ExecuteToolWithDynamicURL(operationID string, parameters map[string]interface{}, baseURL string) (interface{}, error) {
+	return m.executeToolWithBaseURL(operationID, parameters, baseURL)
+}
+
+// ExecuteToolWithResolver executes a tool using a baseURL resolver function.
+// The resolver function can extract baseURL from headers, environment, or any other source.
+func (m *GinMCP) ExecuteToolWithResolver(operationID string, parameters map[string]interface{}, resolver func() string) (interface{}, error) {
+	baseURL := resolver()
+	return m.executeToolWithBaseURL(operationID, parameters, baseURL)
+}
+
+// executeToolWithBaseURL is the internal implementation that accepts a specific baseURL
+func (m *GinMCP) executeToolWithBaseURL(operationID string, parameters map[string]interface{}, baseURL string) (interface{}, error) {
+	if isDebugMode() {
+		log.Printf("[Tool Execution] Starting execution of tool '%s' with parameters: %+v, baseURL: %s", operationID, parameters, baseURL)
+	}
+
+	// Find the operation associated with the tool name (operationID)
+	operation, ok := m.operations[operationID]
+	if !ok {
+		if isDebugMode() {
+			log.Printf("Error: Operation details not found for tool '%s'", operationID)
+		}
+		return nil, fmt.Errorf("operation '%s' not found", operationID)
+	}
+	if isDebugMode() {
+		log.Printf("[Tool Execution] Found operation for tool '%s': Method=%s, Path=%s", operationID, operation.Method, operation.Path)
+	}
+
+	// Continue with the existing tool execution logic using the provided baseURL
+	return m.executeToolLogic(operation, parameters, baseURL)
+}
+
 // defaultExecuteTool is the default implementation for executing a tool.
-// It handles the actual invocation of the underlying Gin handler.
+// It handles the actual invocation of the underlying Gin handler using the configured baseURL.
 func (m *GinMCP) defaultExecuteTool(operationID string, parameters map[string]interface{}) (interface{}, error) {
 	if isDebugMode() {
 		log.Printf("[Tool Execution] Starting execution of tool '%s' with parameters: %+v", operationID, parameters)
@@ -513,7 +555,7 @@ func (m *GinMCP) defaultExecuteTool(operationID string, parameters map[string]in
 		log.Printf("[Tool Execution] Found operation for tool '%s': Method=%s, Path=%s", operationID, operation.Method, operation.Path)
 	}
 
-	// 2. Construct the target URL
+	// Use the configured baseURL (static)
 	baseURL := m.baseURL
 	if baseURL == "" {
 		// Use relative URL if baseURL is not set
@@ -522,6 +564,13 @@ func (m *GinMCP) defaultExecuteTool(operationID string, parameters map[string]in
 			log.Printf("[Tool Execution] Using relative URL for request")
 		}
 	}
+
+	return m.executeToolLogic(operation, parameters, baseURL)
+}
+
+// executeToolLogic contains the core tool execution logic that can be reused
+// with different baseURL resolution strategies
+func (m *GinMCP) executeToolLogic(operation types.Operation, parameters map[string]interface{}, baseURL string) (interface{}, error) {
 
 	path := operation.Path
 	queryParams := url.Values{}
@@ -658,4 +707,93 @@ func (m *GinMCP) defaultExecuteTool(operationID string, parameters map[string]in
 	}
 
 	return resultData, nil
+}
+
+// BaseURLResolver is a function type for resolving baseURL dynamically
+type BaseURLResolver func() string
+
+// NewEnvironmentResolver creates a resolver that extracts baseURL from environment variables.
+// Useful for Quicknode scenarios where the user endpoint is set via environment.
+func NewEnvironmentResolver(envVarName string, fallback string) BaseURLResolver {
+	return func() string {
+		if value := os.Getenv(envVarName); value != "" {
+			return value
+		}
+		return fallback
+	}
+}
+
+// NewHeaderResolver creates a resolver that extracts baseURL from HTTP headers.
+// This requires access to the current request context.
+// Note: This is a template - you'll need to adapt this to your request handling pattern.
+func NewHeaderResolver(headerName string, fallback string) BaseURLResolver {
+	return func() string {
+		// In a real implementation, you would need access to the current request context
+		// This could be achieved through:
+		// 1. Thread-local storage
+		// 2. Context.Context passed through the call chain
+		// 3. Middleware that sets a global variable
+		
+		// For now, return fallback - see example usage for complete implementation
+		return fallback
+	}
+}
+
+// NewQuicknodeResolver creates a resolver specifically for Quicknode environments.
+// It tries multiple common patterns for extracting the user endpoint.
+func NewQuicknodeResolver(fallback string) BaseURLResolver {
+	return func() string {
+		// Try Quicknode-specific environment variables
+		if endpoint := os.Getenv("QUICKNODE_USER_ENDPOINT"); endpoint != "" {
+			return endpoint
+		}
+		if endpoint := os.Getenv("USER_ENDPOINT"); endpoint != "" {
+			return endpoint
+		}
+		if host := os.Getenv("HOST"); host != "" {
+			if !strings.HasPrefix(host, "http") {
+				return "https://" + host
+			}
+			return host
+		}
+		
+		return fallback
+	}
+}
+
+// NewRAGFlowResolver creates a resolver specifically for RAGFlow environments.
+// It tries multiple common patterns for extracting the RAGFlow endpoint.
+func NewRAGFlowResolver(fallback string) BaseURLResolver {
+	return func() string {
+		// Try RAGFlow-specific environment variables in order of preference
+		if endpoint := os.Getenv("RAGFLOW_ENDPOINT"); endpoint != "" {
+			return endpoint
+		}
+		if workflowURL := os.Getenv("RAGFLOW_WORKFLOW_URL"); workflowURL != "" {
+			return workflowURL
+		}
+		
+		// Try building from base URL and workflow ID
+		baseURL := os.Getenv("RAGFLOW_BASE_URL")
+		workflowID := os.Getenv("WORKFLOW_ID")
+		if baseURL != "" && workflowID != "" {
+			baseURL = strings.TrimSuffix(baseURL, "/")
+			return baseURL + "/workflow/" + workflowID
+		}
+		
+		// Try just base URL
+		if baseURL != "" {
+			return baseURL
+		}
+		
+		// Try generic HOST variable
+		if host := os.Getenv("HOST"); host != "" {
+			if !strings.HasPrefix(host, "http") {
+				return "https://" + host
+			}
+			return host
+		}
+		
+		return fallback
+	}
 }

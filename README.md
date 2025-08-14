@@ -10,7 +10,7 @@
     <td valign="top">
       <strong>Enable MCP features for any Gin API with a line of code.</strong>
       <br><br>
-      Gin-MCP is an <strong>opinionated, zero-configuration</strong> library that automatically exposes your existing Gin endpoints as <a href="https://modelcontextprotocol.io/introduction">Model Context Protocol (MCP)</a> tools, making them instantly usable by MCP-compatible clients like <a href="https://cursor.sh/">Cursor</a>.
+      Gin-MCP is an <strong>opinionated, zero-configuration</strong> library that automatically exposes your existing Gin endpoints as <a href="https://modelcontextprotocol.io/introduction">Model Context Protocol (MCP)</a> tools, making them instantly usable by MCP-compatible clients like <a href="https://cursor.sh/">Cursor</a>, <a href="https://claude.ai/desktop">Claude Desktop</a>, <a href="https://continue.dev/">Continue</a>, <a href="https://zed.dev/">Zed</a>, and other MCP-enabled tools.
       <br><br>
       Our philosophy is simple: <strong>minimal setup, maximum productivity</strong>. Just plug Gin-MCP into your Gin application, and it handles the rest.
     </td>
@@ -38,6 +38,7 @@
 -   **Schema Inference:** Automatically generates MCP tool schemas from route parameters and request/response types (where possible).
 -   **Direct Gin Integration:** Mounts the MCP server directly onto your existing `gin.Engine`.
 -   **Parameter Preservation:** Accurately reflects your Gin route parameters (path, query) in the generated MCP tools.
+-   **Dynamic BaseURL Resolution:** Support for proxy environments (Quicknode, RAGFlow) with per-user/deployment endpoints.
 -   **Customizable Schemas:** Manually register schemas for specific routes using `RegisterSchema` for fine-grained control.
 -   **Selective Exposure:** Filter which endpoints are exposed using operation IDs or tags.
 -   **Flexible Deployment:** Mount the MCP server within the same Gin app or deploy it separately.
@@ -222,14 +223,48 @@ mcp := server.New(r, &server.Config{
 
 ## Examples
 
-See the [`examples`](examples) directory for complete, runnable examples demonstrating various features.
+See the [`examples`](examples) directory for complete, runnable examples demonstrating various features:
 
-## Connecting an MCP Client (e.g., Cursor)
+### Basic Usage Examples
+
+- **[`examples/simple/main.go`](examples/simple/main.go)** - Complete product store API with static BaseURL configuration
+- **[`examples/simple/quicknode.go`](examples/simple/quicknode.go)** - Dynamic BaseURL configuration for Quicknode proxy environments  
+- **[`examples/simple/ragflow.go`](examples/simple/ragflow.go)** - Dynamic BaseURL configuration for RAGFlow deployment scenarios
+
+### Dynamic BaseURL for Proxy Scenarios
+
+For environments where each user/deployment has a different endpoint (like Quicknode or RAGFlow), you can configure dynamic BaseURL resolution:
+
+```go
+// Quicknode example - resolves user-specific endpoints
+mcp := server.New(r, &server.Config{
+    Name: "Your API",
+    Description: "API with dynamic Quicknode endpoints",
+    // No static BaseURL needed!
+})
+
+resolver := server.NewQuicknodeResolver("http://localhost:8080")
+mcp.SetExecuteToolFunc(func(operationID string, parameters map[string]interface{}) (interface{}, error) {
+    return mcp.ExecuteToolWithResolver(operationID, parameters, resolver)
+})
+```
+
+**Environment Variables Supported:**
+- **Quicknode**: `QUICKNODE_USER_ENDPOINT`, `USER_ENDPOINT`, `HOST`
+- **RAGFlow**: `RAGFLOW_ENDPOINT`, `RAGFLOW_WORKFLOW_URL`, `RAGFLOW_BASE_URL` + `WORKFLOW_ID`
+
+This eliminates the need for static BaseURL configuration at startup, perfect for multi-tenant proxy environments!
+
+## Connecting MCP Clients
 
 Once your Gin application with Gin-MCP is running:
 
 1.  Start your application.
-2.  In your MCP client (like Cursor Settings -> MCP), provide the URL where you mounted the MCP server (e.g., `http://localhost:8080/mcp`) as the SSE endpoint.
+2.  In your MCP client, provide the URL where you mounted the MCP server (e.g., `http://localhost:8080/mcp`) as the SSE endpoint:
+    - **Cursor**: Settings → MCP → Add Server
+    - **Claude Desktop**: Add to MCP configuration file
+    - **Continue**: Configure in VS Code settings
+    - **Zed**: Add to MCP settings
 3.  The client will connect and automatically discover the available API tools.
 
 ## Contributing
