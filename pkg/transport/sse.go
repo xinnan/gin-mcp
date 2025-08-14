@@ -306,14 +306,14 @@ func (s *SSETransport) HandleMessage(c *gin.Context) {
 			},
 		}
 		s.trySendMessage(connID, msgChan, errMsg)
-		c.Status(http.StatusNoContent)
+		c.Status(http.StatusOK) // Changed from 204 to 200 for mcphost compatibility
 		return
 	}
 
 	// Execute handler and send response
 	respMsg := handler(&reqMsg)
 	if ok := s.trySendMessage(connID, msgChan, respMsg); ok {
-		c.Status(http.StatusNoContent)
+		c.Status(http.StatusOK) // Changed from 204 to 200 for mcphost compatibility
 	} else {
 		log.Errorf("[SSE] Failed to send response for %s", connID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send response"})
