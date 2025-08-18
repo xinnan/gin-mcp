@@ -43,12 +43,16 @@ func ConvertRoutesToTools(routes gin.RoutesInfo, registeredSchemas map[string]ty
 
 		// Generate description information
 		description := fmt.Sprintf("Handler for %s %s", route.Method, route.Path)
+		mcpRoute := ""
 		if handlerDoc != nil {
 			if handlerDoc.Summary != "" {
 				description = handlerDoc.Summary
 			}
 			if handlerDoc.Description != "" {
 				description += "\n\n" + handlerDoc.Description
+			}
+			if handlerDoc.Route != "" {
+				mcpRoute = handlerDoc.Route
 			}
 		}
 
@@ -71,9 +75,13 @@ func ConvertRoutesToTools(routes gin.RoutesInfo, registeredSchemas map[string]ty
 		}
 
 		ttools = append(ttools, tool)
+		path := route.Path
+		if mcpRoute != "" {
+			path = mcpRoute
+		}
 		operations[operationID] = types.Operation{
 			Method: route.Method,
-			Path:   route.Path,
+			Path:   path,
 		}
 	}
 
@@ -248,6 +256,7 @@ type HandlerDoc struct {
 	Description string
 	Params      map[string]string
 	Returns     string
+	Route       string
 }
 
 // parseHandlerComments parses function documentation from source code
@@ -288,6 +297,8 @@ func parseHandlerComments(filePath string, handlerName string) (*HandlerDoc, err
 							}
 						case strings.HasPrefix(line, "@return"):
 							doc.Returns = strings.TrimSpace(strings.TrimPrefix(line, "@return"))
+						case strings.HasPrefix(line, "@mcpRoute"):
+							doc.Route = strings.TrimSpace(strings.TrimPrefix(line, "@mcpRoute"))
 						}
 					}
 				}
