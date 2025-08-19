@@ -1,8 +1,8 @@
 package transport
 
 import (
-	"github.com/ckanthony/gin-mcp/pkg/types"
 	"github.com/gin-gonic/gin"
+	"github.com/xinnan/gin-mcp/pkg/types"
 )
 
 // MessageHandler defines the function signature for handling incoming MCP messages.

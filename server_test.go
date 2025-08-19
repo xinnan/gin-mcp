@@ -7,10 +7,10 @@ import (
 	"sync"
 	"testing"
 
-	transport "github.com/ckanthony/gin-mcp/pkg/transport"
-	"github.com/ckanthony/gin-mcp/pkg/types"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	transport "github.com/xinnan/gin-mcp/pkg/transport"
+	"github.com/xinnan/gin-mcp/pkg/types"
 )
 
 // --- Mock Transport for Testing ---

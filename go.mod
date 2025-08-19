@@ -1,4 +1,4 @@
-module github.com/ckanthony/gin-mcp
+module github.com/xinnan/gin-mcp
 
 go 1.21
 
@@ -40,4 +40,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// replace github.com/ckanthony/gin-mcp => ./
+// replace github.com/xinnan/gin-mcp => ./

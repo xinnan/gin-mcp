@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ckanthony/gin-mcp/pkg/types"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/xinnan/gin-mcp/pkg/types"
 )
 
 // isDebugMode returns true if Gin is in debug mode

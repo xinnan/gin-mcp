@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	server "github.com/ckanthony/gin-mcp"
 	"github.com/gin-gonic/gin"
+	server "github.com/xinnan/gin-mcp"
 )
 
 // Product represents a product in our store

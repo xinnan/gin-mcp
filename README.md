@@ -1,11 +1,11 @@
 # Gin-MCP: Zero-Config Gin to MCP Bridge
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/ckanthony/gin-mcp.svg)](https://pkg.go.dev/github.com/ckanthony/gin-mcp)
-[![CI](https://github.com/ckanthony/gin-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ckanthony/gin-mcp/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/ckanthony/gin-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/ckanthony/gin-mcp)
+[![Go Reference](https://pkg.go.dev/badge/github.com/xinnan/gin-mcp.svg)](https://pkg.go.dev/github.com/xinnan/gin-mcp)
+[![CI](https://github.com/xinnan/gin-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/xinnan/gin-mcp/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/xinnan/gin-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/xinnan/gin-mcp)
 ![](https://badge.mcpx.dev?type=dev 'MCP Dev')
 
-[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/ckanthony/gin-mcp)](https://archestra.ai/mcp-catalog/ckanthony__gin-mcp)
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/xinnan/gin-mcp)](https://archestra.ai/mcp-catalog/xinnan__gin-mcp)
 
 <table border="0">
   <tr>
@@ -48,7 +48,7 @@
 ## Installation
 
 ```bash
-go get github.com/ckanthony/gin-mcp
+go get github.com/xinnan/gin-mcp
 ```
 
 ## Basic Usage: Instant MCP Server
@@ -61,7 +61,7 @@ package main
 import (
 	"net/http"
 
-	server "github.com/ckanthony/gin-mcp/"
+	server "github.com/xinnan/gin-mcp/"
 	"github.com/gin-gonic/gin"
 )
 
@@ -119,7 +119,7 @@ package main
 
 import (
 	// ... other imports
-	"github.com/ckanthony/gin-mcp/pkg/server"
+	"github.com/xinnan/gin-mcp/pkg/server"
 	"github.com/gin-gonic/gin"
 )
 

@@ -4,24 +4,26 @@ import (
 	"os"
 	"strings"
 
-	server "github.com/ckanthony/gin-mcp"
 	"github.com/gin-gonic/gin"
+	server "github.com/xinnan/gin-mcp"
 )
 
 // ConfigureMCPForRAGFlow demonstrates how to configure MCP for RAGFlow scenarios
 // where each deployment or workflow has its own dynamic endpoint.
 //
 // Usage:
-//   r := gin.Default()
-//   registerRoutes(r)
-//   configureMCPForRAGFlow(r)  // Use this instead of configureMCP(r)
-//   r.Run(":8080")
+//
+//	r := gin.Default()
+//	registerRoutes(r)
+//	configureMCPForRAGFlow(r)  // Use this instead of configureMCP(r)
+//	r.Run(":8080")
 //
 // Environment Variables:
-//   RAGFLOW_ENDPOINT        - The RAGFlow deployment endpoint (e.g., "https://api.ragflow.com/workflow/123")
-//   RAGFLOW_WORKFLOW_URL    - Alternative workflow-specific URL
-//   RAGFLOW_BASE_URL        - Base RAGFlow URL
-//   WORKFLOW_ID             - Will be combined with base URL if provided
+//
+//	RAGFLOW_ENDPOINT        - The RAGFlow deployment endpoint (e.g., "https://api.ragflow.com/workflow/123")
+//	RAGFLOW_WORKFLOW_URL    - Alternative workflow-specific URL
+//	RAGFLOW_BASE_URL        - Base RAGFlow URL
+//	WORKFLOW_ID             - Will be combined with base URL if provided
 func configureMCPForRAGFlow(r *gin.Engine) {
 	mcp := server.New(r, &server.Config{
 		Name:        "Gaming Store API",
@@ -36,7 +38,7 @@ func configureMCPForRAGFlow(r *gin.Engine) {
 
 	// Setup dynamic baseURL resolution for RAGFlow
 	resolver := server.NewRAGFlowResolver("http://localhost:8080")
-	
+
 	// Override the default tool execution with dynamic baseURL logic
 	mcp.SetExecuteToolFunc(func(operationID string, parameters map[string]interface{}) (interface{}, error) {
 		return mcp.ExecuteToolWithResolver(operationID, parameters, resolver)
@@ -103,7 +105,7 @@ func buildRAGFlowEndpoint() string {
 	// Try building from base URL and workflow ID
 	baseURL := os.Getenv("RAGFLOW_BASE_URL")
 	workflowID := os.Getenv("WORKFLOW_ID")
-	
+
 	if baseURL != "" && workflowID != "" {
 		baseURL = strings.TrimSuffix(baseURL, "/")
 		return baseURL + "/workflow/" + workflowID
